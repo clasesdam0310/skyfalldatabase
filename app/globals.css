@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
+@theme {
+  /* Registro de colores oficiales de la Ficha Técnica v3.0 */
+  --color-sky-blue: #103882;
+  --color-fall-red: #FA4D5F;
+  --color-dark-bg: #050507;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #050507;
+  --foreground: #ffffff;
+  --sky-blue: #103882;
+  --fall-red: #FA4D5F;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Configuración del Body - Siempre nocturno */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  margin: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer components {
+  /* Clase para las tarjetas con Glassmorfismo técnico */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+  }
+
+  .glass-card:hover {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* El "Aura" de la marca usando skyfall.png */
+  .brand-aura {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .brand-aura::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url('/skyfall.png');
+    background-size: cover;
+    background-position: center;
+    filter: blur(60px) opacity(0.2);
+    z-index: -1;
+    pointer-events: none;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Scrollbar personalizada agresiva */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050507;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #103882; /* Sky Blue */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FA4D5F; /* Fall Red al interactuar */
 }
