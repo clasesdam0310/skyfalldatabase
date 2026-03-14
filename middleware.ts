@@ -5,12 +5,10 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth
   const isLoginPage = req.nextUrl.pathname === '/login'
 
-  // Si no está logueado y no está en /login → redirigir a /login
   if (!isLoggedIn && !isLoginPage) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  // Si está logueado y va a /login → redirigir al dashboard
   if (isLoggedIn && isLoginPage) {
     return NextResponse.redirect(new URL('/', req.url))
   }
@@ -20,6 +18,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    '/((?!api/auth|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/auth|api/rawg|api/igdb|api/media|api/ratings|_next/static|_next/image|favicon.ico).*)',
   ],
 }

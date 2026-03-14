@@ -1,14 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseBrowser } from '@/lib/supabase/client'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = supabaseBrowser
 
 type LocalGame = {
   id: string
@@ -33,11 +30,7 @@ type RawgGame = {
   source: 'rawg'
 }
 
-const LOADING_TEXTS = [
-  'Cargando partida guardada...',
-  'Inicializando nivel...',
-  'Conectando con el servidor...',
-]
+const LOADING_TEXT = 'Cargando partida guardada...'
 
 export default function GamesPage() {
   const [query, setQuery] = useState('')
@@ -45,11 +38,12 @@ export default function GamesPage() {
   const [rawgGames, setRawgGames] = useState<RawgGame[]>([])
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
- const loadingText = LOADING_TEXTS[0]
 
   useEffect(() => {
     async function loadLocalGames() {
       setLoading(true)
+
+      // Solo juegos con al menos un rating con estado registrado
       const { data } = await supabase
         .from('universal_mix')
         .select('*')
@@ -58,7 +52,7 @@ export default function GamesPage() {
 
       setLocalGames(
         (data ?? []).map((item) => ({
-          id: item.id,
+          id: item.id ?? '',
           title: item.title ?? '',
           cover_image: item.cover_image,
           year: item.year,
@@ -83,16 +77,23 @@ export default function GamesPage() {
 
     setSearching(true)
 
+    // Búsqueda local — solo juegos con al menos un status registrado
     const { data: localResults } = await supabase
       .from('media_items')
-      .select('id, title, cover_image, year, genres, creator')
+      .select('id, title, cover_image, year, genres, creator, ratings!inner(status)')
       .eq('type', 'game')
       .ilike('title', `%${q}%`)
+      .not('ratings.status', 'is', null)
       .limit(5)
 
     setLocalGames(
       (localResults ?? []).map((item) => ({
-        ...item,
+        id: item.id ?? '',
+        title: item.title ?? '',
+        cover_image: item.cover_image,
+        year: item.year,
+        genres: item.genres,
+        creator: item.creator,
         source: 'local' as const,
       }))
     )
@@ -128,7 +129,7 @@ export default function GamesPage() {
           </h1>
         </div>
         <p className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>
-          {loadingText}
+          {LOADING_TEXT}
         </p>
       </div>
 
@@ -155,7 +156,7 @@ export default function GamesPage() {
         <div className="flex flex-col items-center justify-center h-64">
           <div className="w-6 h-6 rounded-full border-2 border-white/20 border-t-white/60 animate-spin mb-4" />
           <p className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>
-            {loadingText}
+            {LOADING_TEXT}
           </p>
         </div>
       )}
@@ -235,8 +236,11 @@ export default function GamesPage() {
 }
 
 function GameCard({ game }: { game: LocalGame }) {
+  const router = useRouter()
+
   return (
     <div
+      onClick={() => router.push(`/media/${game.id}`)}
       className="rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-105"
       style={{
         background: 'rgba(255,255,255,0.04)',
@@ -245,12 +249,7 @@ function GameCard({ game }: { game: LocalGame }) {
     >
       <div className="relative" style={{ aspectRatio: '2/3' }}>
         {game.cover_image ? (
-          <Image
-            src={game.cover_image}
-            alt={game.title}
-            fill
-            className="object-cover"
-          />
+          <Image src={game.cover_image} alt={game.title} fill className="object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
             style={{ background: 'rgba(16,56,130,0.15)' }}>
@@ -291,14 +290,14 @@ function RawgGameCard({ game }: { game: RawgGame }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          api_id: String(game.id),
+          api_id:     String(game.id),
           api_source: 'rawg',
-          type: 'game',
-          title: game.name,
+          type:       'game',
+          title:      game.name,
           cover_image: game.background_image,
-          year: game.released ? parseInt(game.released.slice(0, 4)) : null,
-          genres: game.genres?.map((g) => g.name) ?? [],
-          creator: game.developers?.[0]?.name ?? null,
+          year:       game.released ? parseInt(game.released.slice(0, 4)) : null,
+          genres:     game.genres?.map((g) => g.name) ?? [],
+          creator:    game.developers?.[0]?.name ?? null,
         }),
       })
       const data = await res.json()
@@ -320,12 +319,7 @@ function RawgGameCard({ game }: { game: RawgGame }) {
     >
       <div className="relative" style={{ aspectRatio: '2/3' }}>
         {game.background_image ? (
-          <Image
-            src={game.background_image}
-            alt={game.name}
-            fill
-            className="object-cover"
-          />
+          <Image src={game.background_image} alt={game.name} fill className="object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center"
             style={{ background: 'rgba(16,56,130,0.15)' }}>
