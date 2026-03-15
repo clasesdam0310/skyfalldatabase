@@ -1,77 +1,84 @@
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-@theme {
-  /* Registro de colores oficiales de la Ficha Técnica v3.0 */
-  --color-sky-blue: #103882;
-  --color-fall-red: #FA4D5F;
-  --color-dark-bg: #050507;
-}
-
 :root {
-  --background: #050507;
-  --foreground: #ffffff;
-  --sky-blue: #103882;
-  --fall-red: #FA4D5F;
+  --skyfall-950: #0B0F15;
+  --skyfall-900: #121720;
+  --skyfall-800: #1A212C;
+  --skyfall-primary: #4e4aa7;
+  --skyfall-secondary: #cb78bb;
+  /* Paleta SkyFall — inspirada en la imagen del cielo */
+  --sf-bg:        #050810;   /* Near-black azulado */
+  --sf-surface:   #0d1428;   /* Superficie de cards */
+  --sf-border:    rgba(255,255,255,0.06);
+  --sf-cyan:      #00d4ff;   /* Cometa — acento frío principal */
+  --sf-cyan-dim:  #1a8fa8;   /* Cyan apagado */
+  --sf-rose:      #ff6eb4;   /* Destello rosa — acento cálido */
+  --sf-orange:    #ff8c42;   /* Amanecer — warnings/drops */
+  --sf-blue:      #1e6fa8;   /* Azul cielo medio */
+  --sf-star:      rgba(255,255,255,0.85); /* Texto principal */
 }
 
-/* Configuración del Body - Siempre nocturno */
+/* Ocultar scrollbars en toda la aplicación */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
+}
+
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  min-height: 100vh;
-  margin: 0;
+  background-color: var(--sf-bg);
+  background-image: 
+    radial-gradient(circle at 30% 40%, rgba(0,212,255,0.03) 0%, transparent 40%),
+    radial-gradient(circle at 70% 80%, rgba(255,110,180,0.03) 0%, transparent 40%);
+  background-attachment: fixed;
+  color: var(--sf-star);
+  font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-@layer components {
-  /* Clase para las tarjetas con Glassmorfismo técnico */
-  .glass-card {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 0.75rem;
-    transition: all 0.3s ease;
-  }
-
-  .glass-card:hover {
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  /* El "Aura" de la marca usando skyfall.png */
-  .brand-aura {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .brand-aura::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image: url('/skyfall.png');
-    background-size: cover;
-    background-position: center;
-    filter: blur(60px) opacity(0.2);
-    z-index: -1;
-    pointer-events: none;
-  }
+* {
+  box-sizing: border-box;
 }
 
-/* Scrollbar personalizada agresiva */
-::-webkit-scrollbar {
-  width: 6px;
+.crystal-panel {
+  background-color: rgba(13,20,40,0.3);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--sf-border);
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-::-webkit-scrollbar-track {
-  background: #050507;
+.crystal-panel-accent {
+  background-color: rgba(13,20,40,0.3);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--sf-cyan);
+  border-radius: 1rem;
+  box-shadow: 0 0 20px rgba(0,212,255,0.2);
 }
 
-::-webkit-scrollbar-thumb {
-  background: #103882; /* Sky Blue */
-  border-radius: 10px;
+.fix-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #FA4D5F; /* Fall Red al interactuar */
+/* Tipografía mejorada */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.text-tiny {
+  font-size: 0.7rem;
+  line-height: 1rem;
+}
+
+.font-mono {
+  font-family: 'Geist Mono', 'Fira Code', monospace;
 }

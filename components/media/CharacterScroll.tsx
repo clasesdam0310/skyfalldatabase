@@ -30,10 +30,6 @@ export default function CharacterScroll({ characters }: CharacterScrollProps) {
     >
       <div className="relative p-5">
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs font-black text-[#103882]">👥</span>
-          <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Personajes Destacados
-          </h3>
           <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40">
             {characters.length}
           </span>

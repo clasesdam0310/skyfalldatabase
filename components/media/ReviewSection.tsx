@@ -14,6 +14,7 @@ interface ReviewSectionProps {
     created_at: string | null
     users: { id: string; username: string; avatar_url: string | null } | null
   }>
+  mediaType: string // Necesario para los verbos dinámicos
   reactions: Record<string, Array<{ emoji: string; count: number; user_reacted: boolean }>>
   currentUserId: string
   onReaction: (reviewId: string, emoji: string) => void
@@ -21,6 +22,7 @@ interface ReviewSectionProps {
 
 export default function ReviewSection({ 
   ratings, 
+  mediaType,
   reactions, 
   currentUserId, 
   onReaction 
@@ -53,6 +55,7 @@ export default function ReviewSection({
           <ReviewCard
             key={review.id}
             review={review}
+            mediaType={mediaType}
             index={index}
             reactions={reactions[review.id] || []}
             revealedSpoilers={revealedSpoilers}

@@ -1,6 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { Star } from 'lucide-react'
 
 interface FeedCardProps {
   event: {
@@ -31,11 +34,11 @@ const TYPE_ICONS: Record<string, string> = {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  game:  '#34d399',
-  film:  '#38bdf8',
-  anime: '#a78bfa',
-  manga: '#fbbf24',
-  vn:    '#f472b6',
+  game:  '#00d4ff',
+  film:  '#1e6fa8',
+  anime: '#ff6eb4',
+  manga: '#ff8c42',
+  vn:    '#4ae8ff',
 }
 
 function formatRelativeTime(isoString: string): string {
@@ -43,7 +46,6 @@ function formatRelativeTime(isoString: string): string {
   const mins  = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)
   const days  = Math.floor(diff / 86400000)
-
   if (mins  < 1)  return 'ahora mismo'
   if (mins  < 60) return `hace ${mins}m`
   if (hours < 24) return `hace ${hours}h`
@@ -52,100 +54,114 @@ function formatRelativeTime(isoString: string): string {
 
 export default function FeedCard({ event }: FeedCardProps) {
   const router = useRouter()
-  const accentColor = event.media_type ? (TYPE_COLORS[event.media_type] ?? '#103882') : '#103882'
+  const [isHovered, setIsHovered] = useState(false)
+
+  const mediaType = event.media_type ?? 'game'
+  const accentColor = TYPE_COLORS[mediaType] ?? '#00d4ff'
+  const typeIcon = TYPE_ICONS[mediaType] ?? '◈'
   const action = event.payload?.action ?? event.event_type
 
   if (!event.media_id) return null
 
-  const handleUsernameClick = (e: React.MouseEvent) => {
-    e.stopPropagation() // Evita que se active el click de la tarjeta
-    router.push(`/profile/${event.username}`)
-  }
-
-  const handleCardClick = () => {
-    router.push(`/media/${event.media_id}`)
-  }
+  const score = event.payload?.score ? Number(event.payload.score) : null
 
   return (
-    <div
-      onClick={handleCardClick}
-      className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/[0.02] 
-                 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl cursor-pointer"
+    <motion.div
+      onClick={() => router.push(`/media/${event.media_id}`)}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+      className="relative overflow-hidden rounded-xl cursor-pointer"
       style={{
-        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+        border: '1px solid rgba(255,255,255,0.06)',
       }}
+      whileHover={{ scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
-      {/* Efecto de brillo en hover */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at 50% 0%, rgba(16,56,130,0.15) 0%, transparent 70%)'
-        }} />
-
-      {/* Blurred cover background */}
+      {/* Imagen de fondo */}
       {event.media_cover && (
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0"
           style={{
             backgroundImage: `url(${event.media_cover})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            filter: 'blur(1.5px)',
-            transform: 'scale(1.15)',
-            opacity: 0.85,
+            filter: 'blur(1px)',
+            transform: 'scale(1.1)',
+            opacity: 0.7,
           }}
         />
       )}
-      
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-[#050507]/55 pointer-events-none" />
 
-      <div className="relative p-4 z-10">
-        {/* Media title + type icon */}
-        {event.media_title && (
-          <div className="flex items-center gap-2 mb-2.5">
-            <span className="text-xs font-black" style={{ color: accentColor }}>
-              {TYPE_ICONS[event.media_type ?? ''] ?? '◈'}
-            </span>
-            <p className="text-[12px] font-bold text-white/90 leading-tight line-clamp-1">
-              {event.media_title}
-            </p>
+      {/* Overlay oscuro */}
+      <div className="absolute inset-0" style={{ background: 'rgba(5,8,16,0.65)' }} />
+
+      {/* Glow en hover */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        animate={{ opacity: isHovered ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
+        style={{
+          background: `radial-gradient(circle at 50% 0%, ${accentColor}15 0%, transparent 70%)`,
+        }}
+      />
+
+      {/* Contenido - ESTRUCTURA CORREGIDA CON FLEX COLUMN Y GAPS */}
+      <div className="relative z-10 p-4 flex flex-col gap-1.5">
+        {/* Línea 1: Avatar + Usuario + Nota */}
+        <div className="flex items-center gap-1.5">
+          {/* Avatar */}
+          <div
+            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}40, ${accentColor}80)`,
+              border: `1px solid ${accentColor}50`,
+            }}
+          >
+            {event.username[0].toUpperCase()}
           </div>
-        )}
 
-        {/* User + action + score */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Usuario */}
           <button
-            onClick={handleUsernameClick}
-            className="text-[11px] font-black text-[#103882] tracking-tight hover:text-[#FA4D5F] transition-colors"
+            onClick={(e) => { e.stopPropagation(); router.push(`/profile/${event.username}`) }}
+            className="text-xs font-medium text-white/80 hover:text-white transition-colors truncate max-w-[100px]"
           >
             @{event.username}
           </button>
-          <span className="text-[11px] text-white/35 font-medium">
-            {action}
-          </span>
-          {event.payload?.score != null && (
-            <span className="text-[11px] font-black text-[#FA4D5F] ml-auto">
-              {String(event.payload.score)}★
-            </span>
+
+          {/* Nota con estrella cyan */}
+          {score && (
+            <div className="flex items-center gap-0.5 ml-auto">
+              <span className="text-xs font-bold text-[#00d4ff]">{score}</span>
+              <Star size={10} className="text-[#00d4ff] fill-[#00d4ff]" strokeWidth={1.5} />
+            </div>
           )}
         </div>
 
-        {/* Review snippet */}
-        {event.payload?.review && (
-          <p className="text-[10px] text-white/50 mt-2 leading-relaxed line-clamp-2 italic border-l-2 pl-2"
-            style={{ borderColor: accentColor }}>
-            {event.payload.review_is_spoiler
-              ? '⚠ Contiene spoilers'
-              : String(event.payload.review)
-            }
-          </p>
+        {/* Línea 2: Tiempo + Acción */}
+        <div className="flex items-center gap-1.5 text-[10px]">
+          <span className="text-slate-400">
+            {event.created_at ? formatRelativeTime(event.created_at) : ''}
+          </span>
+          <span className="text-white/30">·</span>
+          <span className="text-slate-400 truncate">{action}</span>
+        </div>
+
+        {/* Línea 3: Título del medio */}
+        {event.media_title && (
+          <h4 className="text-sm font-semibold text-white leading-tight line-clamp-1">
+            {event.media_title}
+          </h4>
         )}
 
-        {/* Timestamp */}
-        <p className="text-[9px] text-white/20 mt-1.5 font-medium tracking-wide">
-          {event.created_at ? formatRelativeTime(event.created_at) : ''}
-        </p>
+        {/* Línea 4: Reseña (si existe) */}
+        {event.payload?.review && (
+          <p className="text-[11px] italic leading-relaxed line-clamp-2 text-white/60">
+            {event.payload.review_is_spoiler
+              ? '⚠ Contiene spoilers'
+              : `"${event.payload.review}"`}
+          </p>
+        )}
       </div>
-    </div>
+    </motion.div>
   )
 }

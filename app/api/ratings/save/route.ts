@@ -12,11 +12,11 @@ function buildFeedAction(
 ): { eventType: string; action: string } {
   const STATUS_ACTIONS: Record<string, string> = {
     completed:       'ha completado',
-    in_progress:     'está jugando',
+    in_progress:     'está jugando/viendo/leyendo',
     on_hold:         'ha puesto en pausa',
     dropped:         'ha abandonado',
     plan_to_consume: 'ha marcado como pendiente',
-    rewatching:      'está reviendo',
+    rewatching:      'está reviendo/releyendo',
   }
   const STATUS_LABELS: Record<string, string> = {
     completed:       'completado',
@@ -29,8 +29,17 @@ function buildFeedAction(
 
   const statusChanged = status !== (prevStatus ?? '')
   const scoreChanged  = score !== prevScore
+  const reviewChanged = review !== (prevReview ?? '')
 
-  // Prioridad 1: Estado
+  // Prioridad 1: Review nueva o editada
+  if (review && reviewChanged) {
+    return {
+      eventType: 'reviewed',
+      action: prevReview ? 'ha editado su reseña' : 'ha escrito una reseña',
+    }
+  }
+
+  // Prioridad 2: Estado
   if (status) {
     const isNew = !prevStatus
     return {
@@ -41,7 +50,7 @@ function buildFeedAction(
     }
   }
 
-  // Prioridad 2: Nota
+  // Prioridad 3: Nota
   if (scoreChanged && score !== null) {
     return {
       eventType: 'rated',
@@ -51,10 +60,9 @@ function buildFeedAction(
 
   // Fallback
   return {
-    eventType: 'rated',
-    action: STATUS_ACTIONS[status] ?? 'ha actualizado',
+    eventType: 'updated',
+    action: 'ha actualizado',
   }
-
 }
 
 export async function POST(req: NextRequest) {
@@ -67,6 +75,18 @@ export async function POST(req: NextRequest) {
     const currentUserId = session.user.id
     const body = await req.json()
     const { media_id, score, status, review, review_is_spoiler } = body
+
+    // Validar que media_id existe
+    if (!media_id) {
+      return NextResponse.json({ error: 'media_id requerido' }, { status: 400 })
+    }
+
+    // Obtener información del media para el payload
+    const { data: mediaData } = await supabaseAdmin
+      .from('media_items')
+      .select('title, type')
+      .eq('id', media_id)
+      .single()
 
     // 1. Obtener rating anterior para comparar
     const { data: prevRating } = await supabaseAdmin
@@ -88,9 +108,12 @@ export async function POST(req: NextRequest) {
         review_is_spoiler,
       }, { onConflict: 'user_id,media_id' })
 
-    if (ratingError) throw new Error(ratingError.message)
+    if (ratingError) {
+      console.error('Error upserting rating:', ratingError)
+      throw new Error(ratingError.message)
+    }
 
-    // 3. Determinar acción — un solo evento
+    // 3. Determinar acción
     const { eventType, action } = buildFeedAction(
       status,
       score,
@@ -100,18 +123,21 @@ export async function POST(req: NextRequest) {
       prevRating?.review ?? null,
     )
 
-    // 4. Payload
+    // 4. Construir payload completo
     const payload: { [key: string]: string | number | boolean | null } = {
       score,
       status,
       action,
+      mediaType: mediaData?.type || null,
+      mediaTitle: mediaData?.title || null,
     }
+    
     if (review?.trim().length > 0) {
-      payload.review            = review.trim()
+      payload.review = review.trim()
       payload.review_is_spoiler = review_is_spoiler
     }
 
-    // 5. Insert feed event — atómico en el servidor
+    // 5. Insert feed event
     const { error: feedError } = await supabaseAdmin
       .from('feed_events')
       .insert({
@@ -122,13 +148,17 @@ export async function POST(req: NextRequest) {
       })
 
     if (feedError) {
-      console.warn('Feed event insert failed:', feedError.message)
+      console.error('Feed event insert failed:', feedError.message)
+      // No lanzamos error porque el rating ya se guardó
+    } else {
+      console.log('✅ Feed event created:', eventType, action)
     }
 
     return NextResponse.json({ ok: true })
 
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error desconocido'
+    console.error('Error en ratings/save:', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -37,7 +37,6 @@ async function getAccessToken(): Promise<string> {
 
 async function igdbFetch(endpoint: string, body: string) {
   const token = await getAccessToken()
-
   const res = await fetch(`https://api.igdb.com/v4/${endpoint}`, {
     method: 'POST',
     headers: {
@@ -48,9 +47,7 @@ async function igdbFetch(endpoint: string, body: string) {
     body,
     cache: 'no-store',
   })
-
-  const data = await res.json()
-  return data
+  return res.json()
 }
 
 export type IgdbGame = {
@@ -61,7 +58,7 @@ export type IgdbGame = {
   first_release_date: number | null
   genres: { name: string }[]
   involved_companies: { company: { name: string }; developer: boolean }[]
-  characters: IgdbCharacter[]
+  characters?: IgdbCharacter[]
 }
 
 export type IgdbCharacter = {
@@ -72,37 +69,47 @@ export type IgdbCharacter = {
 }
 
 export async function searchIgdbGames(query: string): Promise<IgdbGame[]> {
-  const data = await igdbFetch('games', `
-    search "${query}";
-    fields id, name, summary, cover.url, first_release_date, genres.name,
-           involved_companies.company.name, involved_companies.developer;
-    limit 10;
-  `)
-  return Array.isArray(data) ? data : []
+  try {
+    const data = await igdbFetch('games', `
+      search "${query}";
+      fields id, name, summary, cover.url, first_release_date, genres.name,
+             involved_companies.company.name, involved_companies.developer;
+      limit 10;
+    `)
+    return Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Error searching IGDB:', error)
+    return []
+  }
 }
 
 export async function getIgdbGame(id: string): Promise<IgdbGame | null> {
-  const data = await igdbFetch('games', `
-    where id = ${id};
-    fields id, name, summary, cover.url, first_release_date, genres.name,
-           involved_companies.company.name, involved_companies.developer;
-    limit 1;
-  `)
-  return Array.isArray(data) && data.length > 0 ? data[0] : null
+  try {
+    const data = await igdbFetch('games', `
+      where id = ${id};
+      fields id, name, summary, cover.url, first_release_date, genres.name,
+             involved_companies.company.name, involved_companies.developer;
+      limit 1;
+    `)
+    return Array.isArray(data) && data.length > 0 ? data[0] : null
+  } catch (error) {
+    console.error('Error fetching IGDB game:', error)
+    return null
+  }
 }
 
 export async function getIgdbCharactersByGame(gameId: string): Promise<IgdbCharacter[]> {
-  const data = await igdbFetch('characters', `
-    where games = (${gameId});
-    fields id, name, description, mug_shot.url;
-    limit 10;
-  `)
-  return Array.isArray(data) ? data : []
-}
-
-export async function getIgdbCharacters(gameId: string): Promise<IgdbCharacter[]> {
-  const game = await getIgdbGame(gameId)
-  return game?.characters ?? []
+  try {
+    const data = await igdbFetch('characters', `
+      where games = (${gameId});
+      fields id, name, description, mug_shot.url;
+      limit 10;
+    `)
+    return Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Error fetching IGDB characters:', error)
+    return []
+  }
 }
 
 export function igdbImageUrl(
